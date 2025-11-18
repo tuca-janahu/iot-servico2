@@ -7,14 +7,14 @@ python -m venv .venv
 
 ```
 
-2. Ativar o venv 
-2. 1. Windows
+2. Ativar o venv
+   
+i. Windows
 
 ```bash
 .venv\Scripts\Activate.ps1
 ```
-
-2. 2. MacOS / Linux
+ii. MacOS / Linux
 
 ```bash
 source .venv/bin/activate
