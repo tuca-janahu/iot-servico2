@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient, Point, WritePrecision
-from influxdb_client.client.write_api import SYNCHRONOUS  # <<-- IMPORTANTE
+from influxdb_client.client.write_api import SYNCHRONOUS  
 
 load_dotenv()
 
@@ -12,7 +12,6 @@ INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 INFLUX_ORG = os.getenv("INFLUX_ORG")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
 
-# (opcional mas recomendado) validação básica das envs
 missing = [name for name, value in {
     "INFLUX_URL": INFLUX_URL,
     "INFLUX_TOKEN": INFLUX_TOKEN,
@@ -30,12 +29,26 @@ client = InfluxDBClient(
 )
 
 write_api = client.write_api(write_options=SYNCHRONOUS)
-# (ou simplesmente: write_api = client.write_api() )
+# (write_api = client.write_api() )
 
 
 def write_sensor_data(data: dict):
-    # timestamp em SEGUNDOS (epoch). Se vier em ms, use / 1000
-    ts = datetime.fromtimestamp(data["timestamp"], tz=timezone.utc)
+    # timestamp em SEGUNDOS (epoch). Se vier em ms, usar / 1000
+    ts_raw = data.get("timestamp")
+
+    # Define um limite: se for muito antigo ou None, usa "agora"
+    if ts_raw is None:
+        ts = datetime.now(timezone.utc)
+    else:
+        # Se vier em milissegundos, converte:
+        if ts_raw > 10**12:  # heurística grossa ms vs s
+            ts_raw = ts_raw / 1000
+
+        ts = datetime.fromtimestamp(ts_raw, tz=timezone.utc)
+
+        # Se estiver muito antigo (ex: antes de 2025), força pra agora
+        if ts.year < 2025:
+            ts = datetime.now(timezone.utc)
 
     p = (
         Point("monitor_tanque")
